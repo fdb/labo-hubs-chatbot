@@ -22,11 +22,21 @@ let members = {};
 let chatStates = {};
 
 let dialogOptions = [
-  ["START", /(hello|hi)/, "Hi there!", "GREETED"],
+  ["START", /(hello|hi)/, "Hi there! Guess what I'm thinking of.", "GREETED"],
   ["GREETED", /(hello|hi)/, "Hi again!", "ANNOYED"],
   ["GREETED", /(i hate you)/, "I hate you too!", "ANGRY"],
   ["ANNOYED", /(hello|hi)/, "I ALREADY SAID HI!!!", "START"],
   ["ANGRY", /(sorry)/, "I forgive you.", "GREETED"],
+
+  // Guessing game
+  ["GREETED", /(hammer)/, "One correct!", "HAMMER"],
+  ["HAMMER", /(hammer)/, "You already said that!", "HAMMER"],
+  ["HAMMER", /(car)/, "Two correct!", "HAMMER_CAR"],
+  ["HAMMER", /(brush)/, "Two correct!", "HAMMER_BRUSH"],
+  ["HAMMER_CAR", /(hammer|car)/, "You already said that!", "HAMMER_CAR"],
+  ["HAMMER_CAR", /(brush)/, "Well done!", "START"],
+  ["HAMMER_BRUSH", /(hammer|brush)/, "You already said that!", "HAMMER_BRUSH"],
+  ["HAMMER_BRUSH", /(car)/, "Well done!", "START"],
 ];
 
 function sendMessage(roomId, command, body) {
@@ -60,6 +70,7 @@ function receiveMessage(data) {
       const hub = body.response.hubs[0];
       console.log(`Connected to ${hub.name}.`);
       state = STATE_CONNECTED;
+      setInterval(sendHeartbeat, 30000);
     } else {
       console.log(`ERROR WHILE JOINING: ${JSON.stringify(body)}`);
     }
@@ -67,7 +78,7 @@ function receiveMessage(data) {
     console.log(body);
     handleChatMessage(body);
   } else if (command === "presence_diff") {
-    console.log(body);
+    // console.log(body);
   } else {
     //console.log(`Unknown command ${command}`);
   }
@@ -86,15 +97,21 @@ function handleChatMessage(message) {
     if (startState !== chatState) continue;
     if (body.match(input)) {
       console.log(sessionId, chatState, output);
-      sendMessage(fullHubId, "message", { body: output, type: "chat" });
-      chatState = endState;
-      chatStates[sessionId] = chatState;
+      setTimeout(() => {
+        sendMessage(fullHubId, "message", { body: output, type: "chat" });
+        chatState = endState;
+        chatStates[sessionId] = chatState;
+      }, 500 + Math.random() * 1000);
       break;
     }
   }
 }
 
+function sendHeartbeat() {
+  sendMessage("phoenix", "heartbeat", {});
+}
+
 ws.on("open", function () {
-  sendMessage("ret", "phx_join", { hub_id: "T8NTTNr" });
+  sendMessage("ret", "phx_join", { hub_id: hubId });
 });
 ws.on("message", receiveMessage);
