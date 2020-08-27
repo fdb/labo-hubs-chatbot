@@ -1,6 +1,8 @@
 const WebSocket = require("ws");
 
-const ws = new WebSocket("wss://relaxed-werewolf.reticulum.io/socket/websocket?vsn=2.0.0");
+const ws = new WebSocket(
+  "wss://relaxed-werewolf.reticulum.io/socket/websocket?vsn=2.0.0"
+);
 
 const STATE_STARTING = "starting";
 const STATE_JOINING = "joining";
@@ -24,7 +26,7 @@ let dialogOptions = [
   ["GREETED", /(hello|hi)/, "Hi again!", "ANNOYED"],
   ["GREETED", /(i hate you)/, "I hate you too!", "ANGRY"],
   ["ANNOYED", /(hello|hi)/, "I ALREADY SAID HI!!!", "START"],
-  ["ANGRY", /(sorry)/, "I forgive you.", "GREETED"]
+  ["ANGRY", /(sorry)/, "I forgive you.", "GREETED"],
 ];
 
 function sendMessage(roomId, command, body) {
@@ -48,7 +50,7 @@ function receiveMessage(data) {
         profile: { avatarId, displayName },
         auth_token: null,
         perms_token: null,
-        context: { mobile: false, embed: false }
+        context: { mobile: false, embed: false },
       });
     } else {
       console.log(`ERROR WHILE STARTING: ${JSON.stringify(body)}`);
@@ -92,7 +94,7 @@ function handleChatMessage(message) {
   }
 }
 
-ws.on("open", function() {
+ws.on("open", function () {
   sendMessage("ret", "phx_join", { hub_id: "T8NTTNr" });
 });
 ws.on("message", receiveMessage);
