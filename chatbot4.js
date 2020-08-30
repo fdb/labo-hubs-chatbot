@@ -8,7 +8,7 @@ const STATE_JOINING = "joining";
 const STATE_CONNECTED = "connected";
 
 let state = STATE_STARTING;
-let hubId = "qPxWfFA";
+let hubId = "LMND7m9";
 let fullHubId = `hub:${hubId}`;
 let receiveId = 1;
 let sendId = 1;
@@ -58,8 +58,15 @@ let dialogOptions = [
   ["COMPUTER_MIRROR", /(computer|mirror)/, "You already said that!", "COMPUTER_MIRROR"],
   ["COMPUTER_MIRROR", /(shell)/, "Ahhhhh...... the number of the portal is... 32!", "WIN"],
 
+  ["*", /(help|lost)/, ["Figure it out yourself!", "I'm not going to help you $NAME."], "*"],
+  ["*", /(.*)/, ["Well said $NAME!", "You're right $NAME."], "*"],
+
   // Guessing game
 ];
+
+function choice(l) {
+  return l[Math.floor(Math.random() * l.length)];
+}
 
 function sendMessage(roomId, command, body) {
   const message = JSON.stringify([receiveId, sendId, roomId, command, body]);
@@ -109,9 +116,14 @@ function receiveMessage(data) {
       members[sessionId] = {
         displayName,
       };
-      const message = `Welcome, dear ${displayName}, to my attic...... I like to listen here for any sounds from the outside.. so few come in... Stay here among the paintings for awhile, you will see there is no way out.... But let's play a game! 
-      In each of these images, there is one element which you must name... For each image, this will be the most central object. But beware! Name all of the elements, and I shall steal your voice. Lo, I shall join the other world. You shall also be set free, for I shall tell you the secret of the portal.............................`;
-      sendMessage(fullHubId, "message", { body: message, type: "chat" });
+      setTimeout(() => {
+        const message = `Welcome, dear ${displayName}, to my attic...... I like to listen here for any sounds from the outside.. `;
+        sendMessage(fullHubId, "message", { body: message, type: "chat" });
+      }, 1000);
+      setTimeout(() => {
+        const message = `Let's play a game ${displayName}! In each of these images, there is one element which you must name... For each image, this will be the most central object. But beware! Name all of the elements, and I shall steal your voice. Lo, I shall join the other world. You shall also be set free, for I shall tell you the secret of the portal.............................`;
+        sendMessage(fullHubId, "message", { body: message, type: "chat" });
+      }, 3000);
     }
 
     for (const sessionId of Object.keys(body.leaves)) {
@@ -147,17 +159,23 @@ function handleChatMessage(message) {
   const user = members[sessionId];
   // Ignore messages we sent ourselves.
   if (sessionId === botSessionId) return;
-  const body = message.body.trim();
+  const body = message.body.trim().toLowerCase();
   let chatState = chatStates[sessionId] || "START";
   // Find a suitable dialog option.
   for (const [startState, input, output, endState] of dialogOptions) {
-    if (startState !== chatState) continue;
+    if (startState !== chatState && startState !== "*") continue;
     if (body.match(input)) {
-      let message = output.replace("$NAME", user ? user.displayName : "Stranger");
+      let message;
+      if (Array.isArray(output)) {
+        message = choice(output);
+      } else {
+        message = output;
+      }
+      message = message.replace("$NAME", user ? user.displayName : "Stranger");
       console.log(sessionId, chatState, output);
       setTimeout(() => {
         sendMessage(fullHubId, "message", { body: message, type: "chat" });
-        chatState = endState;
+        chatState = endState === "*" ? chatState : endState;
         chatStates[sessionId] = chatState;
         if (chatState === "WIN") {
           oscClient.send("/win");
